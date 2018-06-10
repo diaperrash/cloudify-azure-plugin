@@ -82,7 +82,7 @@ class TestAzure(testtools.TestCase):
             del login
             # Verify resources
             for instance in instances:
-                show_command = 'az resource show --name {0}'.format(
+                show_command = 'az resource list --name {0}'.format(
                     instance.runtime_properties['name'])
                 show = subprocess.Popen(
                     show_command.split(),

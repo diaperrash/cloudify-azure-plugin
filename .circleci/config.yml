@@ -1,0 +1,67 @@
+version: 2
+
+checkout:
+  post:
+    - >
+      if [ -n "$CI_PULL_REQUEST" ]; then
+        PR_ID=${CI_PULL_REQUEST##*/}
+        git fetch origin +refs/pull/$PR_ID/merge:
+        git checkout -qf FETCH_HEAD
+      fi
+
+jobs:
+  unittests:
+    machine:
+      enabled: true
+      python:
+        version: pypy-2.2.1
+
+    steps:
+      - checkout
+      - run:
+          name: install tox
+          command: pip install tox
+      - run: tox -e flake8
+      - run: tox -e py27
+
+  cloudify-manager:
+    machine:
+      enabled: true
+      python:
+        version: pypy-2.2.1
+
+    steps:
+      - checkout
+      - run:
+          name: install azure cli
+          command: pip install azure-cli
+      - run:
+          name: configure azure cli
+          command: az login -u $TESTUSEREMAIL -p $AZURE_CLI_SE
+      - run:
+          name: install test requirements
+          command: pip install nose testtools
+      - run:
+          name: install cloudify cli
+          command: pip install cloudify===4.3.2
+      - run:
+          name: install fabric plugin
+          command: pip install https://github.com/cloudify-cosmo/cloudify-fabric-plugin/archive/1.5.1.zip
+      - run:
+          name: install utilities plugin
+          command: pip install https://github.com/cloudify-incubator/cloudify-utilities-plugin/archive/1.7.1.zip
+      - run:
+          name: install azure plugin from branch
+          command: pip install -e .
+      - run:
+          name: execute test
+          command: nosetests -s manager_tests/test_azure.py
+
+workflows:
+  version: 2
+  tests:
+    jobs:
+      - unittests:
+          context: ecosystem
+      - cloudify-manager:
+          context: ecosystem

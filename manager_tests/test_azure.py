@@ -70,15 +70,27 @@ class TestAzure(testtools.TestCase):
                 task_retries=45,
                 task_retry_interval=10)
             instances = cfy_local.storage.get_node_instances()
+            # Login to Azure
+            login_command = 'az login -u {0} -p {1}'.format(
+                os.environ['TESTUSEREMAIL'],
+                os.environ['AZURE_CLI_SE'])
+            login = subprocess.Popen(
+                login_command.split(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            login.communicate()
+            del login
+            # Verify resources
             for instance in instances:
-                command = 'az resource list --name {0}'.format(
+                show_command = 'az resource show --name {0}'.format(
                     instance.runtime_properties['name'])
-                p = subprocess.Popen(
-                    command.split(),
+                show = subprocess.Popen(
+                    show_command.split(),
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE)
-                p.communicate()
-                self.assertEqual(p.returncode, 0)
+                show.communicate()
+                self.assertEqual(show.returncode, 0)
+                del show
         finally:
             cfy_local.execute(
                 'uninstall',
